@@ -4,12 +4,12 @@ import re
 from subprocess import call
 
 
-def get_highlights_from_transcript(keyword='think'):
+def get_highlights_from_transcript(keyword, transscript_file):
     """Return list of time pairs corresponding to occurences of the keyword."""
     highlight_times = []
     csv_rows = []
     # get file as a list, because we need to look ahead
-    with open('wliia-transcript.csv', 'r') as transcript:
+    with open(transscript_file, 'r') as transcript:
         reader = csv.reader(transcript, delimiter=',')
         for row in reader:
             assert len(row) == 2
@@ -47,12 +47,23 @@ def concat_files(output_file='output.avi'):
     call(['ffmpeg', '-f', 'concat', '-i', 'concat_files.txt', '-c', 'copy', output_file])
 
 
-highlight_times = get_highlights_from_transcript('think')
-print highlight_times
-split_from_highlights(
-    video_file='data/wliia-questions.mp4',
-    highlight_times=highlight_times
-)
-num_clips = len(highlight_times)
-generate_concat_file(num_clips)
-concat_files()
+def cleanup_temp_files():
+    # TODO: replace with python calls
+    call(['rm', '-rf', 'output'])
+    call(['mkdir', 'output'])
+    call(['rm', 'output.avi'])
+
+
+def vidlight_bee():
+    cleanup_temp_files()
+    highlight_times = get_highlights_from_transcript('be', 'transcripts/bee-movie-trailer-transcript.csv')
+    split_from_highlights(
+        video_file='data/bee-movie-trailer.mp4',
+        highlight_times=highlight_times
+    )
+    num_clips = len(highlight_times)
+    generate_concat_file(num_clips)
+    concat_files()
+
+
+vidlight_bee()
