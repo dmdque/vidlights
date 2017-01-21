@@ -4,6 +4,11 @@ import re
 from subprocess import call
 from subprocess import PIPE
 
+from clap_detect import clap_detect
+
+
+DEMO = "PROG"
+
 
 def get_highlights_from_transcript(keyword, transscript_file):
     """Return list of time pairs corresponding to occurences of the keyword."""
@@ -36,12 +41,12 @@ def generate_concat_file(n, file_extension='avi', output_dir='output'):
             f.write("file '{}/tmp{}.{}'\n".format(output_dir, i, file_extension))
 
 
-def split_from_highlights(video_file, highlight_times, output_dir='output'):
+def split_from_highlights(video_file, highlight_times, output_file='output'):
     # TODO: ensure output folder exists
     for i, time_pair in enumerate(highlight_times):
         start_time, end_time = time_pair
-        print ['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_dir, i)]
-        call(['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_dir, i)])
+        print ['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, i)]
+        call(['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, i)])
 
 
 def concat_files(output_file='output.avi'):
@@ -67,4 +72,24 @@ def vidlight_bee():
     concat_files()
 
 
-vidlight_bee()
+def progression_slice():
+    cleanup_temp_files()
+    clap_times = clap_detect('data/coin2.MOV', 'coin2.mp3', 'tmp/coin2.wav')
+    # format highlight times
+    formatted_clap_times = [(arrow.get(time).format('m:ss'), arrow.get(5).format('m:ss')) for time in clap_times]
+    print 'formatted_clap_times', formatted_clap_times
+    split_from_highlights(
+        video_file='data/coin2.MOV',
+        highlight_times=formatted_clap_times
+    )
+    num_clips = len(formatted_clap_times)
+    generate_concat_file(num_clips)
+    concat_files()
+
+
+
+
+if DEMO == "bee":
+    vidlight_bee()
+else:
+    progression_slice()

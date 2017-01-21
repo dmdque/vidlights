@@ -69,11 +69,12 @@ def get_clap_times():
             clap_times.append(float(i) * CONFIG_SPLIT_INCREMENT)  # TODO: is float necessary here?
     return clap_times
 
-extract_audio('data/clap-test.mp4', 'clap-test.mp3')
-call(['rm', '-rf', 'tmp'])
-call(['mkdir', 'tmp'])
 
-split_audio_files('clap-test.mp3', 'tmp/clap-test.wav', CONFIG_SPLIT_INCREMENT)
-trim_silence()
-print get_clap_times()
-
+def clap_detect(video_file, output_audio_file, output_split_audio_file):
+    extract_audio(video_file, output_audio_file)
+    call(['rm', '-rf', 'tmp'])
+    call(['mkdir', 'tmp'])
+    split_audio_files(output_audio_file, output_split_audio_file, CONFIG_SPLIT_INCREMENT)
+    trim_silence()
+    clap_times = get_clap_times()
+    return clap_times
