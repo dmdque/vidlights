@@ -1,12 +1,15 @@
+import os
 import re
 from subprocess import PIPE
 from subprocess import Popen
 from subprocess import call
 
 
+
 CONFIG_CLAP_AMPLITUDE_THRESHOLD = 0.7
 CONFIG_CLAP_ENERGY_THRESHOLD = 0.3
 CONFIG_CLAP_MAX_DURATION = 1500
+CONFIG_SPLIT_INCREMENT = 0.2
 
 
 def extract_audio(video_file, output_audio_file):
@@ -20,10 +23,9 @@ def split_audio_files(input_file, output_file, duration=1):
 
 
 def trim_silence():
-    # for each file
-    # sox in out silence 1 0.0001 ...
-    call(['sox', 'clap-corridor-01.wav', '-t', 'wav', 'tmp/output001.wav', 'silence' '1', '0.0001', '10%', '1', '0.1', '10%'])
-    pass
+    for f in os.listdir('tmp'):
+        file_relative_path = 'tmp/{}'.format(f)
+        call(['sox', file_relative_path, '-t', 'wav', file_relative_path, 'silence', '0.5', '0.0001', '10%', '1', '0.1', '10%'])
 
 
 def get_stats(input_file):
@@ -54,10 +56,24 @@ def is_clap(stat_dict):
             rms < CONFIG_CLAP_ENERGY_THRESHOLD)
 
 
-# extract_audio('data/bee-movie-trailer.mp4', 'tmp/audio.mp3')
-split_audio_files('clap-corridor-01.wav', 'tmp/output.wav', .5)
+
+# TODO: exclude things like .DS_STORE
+def get_clap_times():
+    clap_times = []
+    for i, f in enumerate(os.listdir('tmp')):
+        file_relative_path = 'tmp/{}'.format(f)
+        stats = get_stats(file_relative_path)
+        print file_relative_path, stats
+        stat_dict = parse_stats(stats)
+        if is_clap(stat_dict):
+            clap_times.append(float(i) * CONFIG_SPLIT_INCREMENT)  # TODO: is float necessary here?
+    return clap_times
+
+extract_audio('data/clap-test.mp4', 'clap-test.mp3')
+call(['rm', '-rf', 'tmp'])
+call(['mkdir', 'tmp'])
+
+split_audio_files('clap-test.mp3', 'tmp/clap-test.wav', CONFIG_SPLIT_INCREMENT)
 trim_silence()
-stats = get_stats('tmp/output001.wav')
-stat_dict = parse_stats(stats)
-print is_clap(stat_dict)
+print get_clap_times()
 

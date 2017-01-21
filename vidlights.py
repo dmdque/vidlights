@@ -2,6 +2,7 @@ import arrow
 import csv
 import re
 from subprocess import call
+from subprocess import PIPE
 
 
 def get_highlights_from_transcript(keyword, transscript_file):
