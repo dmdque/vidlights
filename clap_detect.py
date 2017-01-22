@@ -66,7 +66,7 @@ def get_clap_times():
         print file_relative_path, stats
         stat_dict = parse_stats(stats)
         if is_clap(stat_dict):
-            clap_times.append(float(i) * CONFIG_SPLIT_INCREMENT)  # TODO: is float necessary here?
+            clap_times.append(i * CONFIG_SPLIT_INCREMENT)
     return clap_times
 
 
