@@ -1,5 +1,6 @@
 import arrow
 import csv
+import os
 import re
 from enum import Enum
 from subprocess import PIPE
@@ -13,11 +14,14 @@ class ClipMode(Enum):
     start_and_end = 2
 
 
-DEMO = "PROG"
+DEMO = 'multiple'
 CONFIG = {
+    'video_mode': 'multiple',
+    'video_dir': 'data/vids',
+    'extension_filter': 'MOV',
     'input_video': 'data/snap-test-5.MOV',
-    'output_split': 'tmp/snap-test-5.wav',
-    'output_video': 'generated/vidlight-snap-test-5.avi',
+    'output_audio_file': 'tmp/snap-test-5.wav',
+    'output_video': 'generated/coin-all.avi',
     'clip_mode': ClipMode.start_and_end,
     'clip_duration': 12
 }
@@ -53,12 +57,12 @@ def generate_concat_file(n, file_extension='avi', output_dir='output'):
             f.write("file '{}/tmp{}.{}'\n".format(output_dir, i, file_extension))
 
 
-def split_from_highlights(video_file, highlight_times, output_file='output'):
+def split_from_highlights(video_file, highlight_times, output_file='output', base_count=0):
     # TODO: ensure output folder exists
     for i, time_pair in enumerate(highlight_times):
         start_time, end_time = time_pair
-        print ['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, i)]
-        call(['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, i)])
+        print ['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, base_count + i)]
+        call(['ffmpeg', '-i', video_file, '-ss', start_time, '-t', end_time, '{}/tmp{}.avi'.format(output_file, base_count + i)])
 
 
 def concat_files(output_file=CONFIG['output_video']):
@@ -72,6 +76,7 @@ def setup_and_clean():
     call(['mkdir', '-p', 'generated'])
     call(['mkdir', '-p', 'tmp/audio'])
     call(['mkdir', '-p', 'tmp/video'])
+    call(['mkdir', '-p', 'data/vids'])
     call(['rm', 'output.avi'])
     call(['rm', 'tmp_audio.mp3'])
 
@@ -124,9 +129,7 @@ def interpret_claps(clap_times, mode):
 
 def progression_slice():
     setup_and_clean()
-    clap_times = clap_detect(CONFIG['input_video'], 'tmp_audio.mp3', CONFIG['output_split'])
-    # format highlight times
-    import ipdb; ipdb.set_trace()
+    clap_times = clap_detect(CONFIG['input_video'], 'tmp_audio.mp3', CONFIG['output_audio_file'])
     formatted_clap_times = interpret_claps(clap_times, CONFIG['clip_mode'])
     print 'formatted_clap_times', formatted_clap_times
     split_from_highlights(
@@ -138,7 +141,39 @@ def progression_slice():
     concat_files()
 
 
-if DEMO == "bee":
+def get_video_list_chronological():
+    video_date_list = []
+    for f in os.listdir(CONFIG['video_dir']):
+        if f[-3:] == CONFIG['extension_filter']:
+            file_path = '{}/{}'.format(CONFIG['video_dir'], f)
+            stat = os.stat(file_path)
+            video_date_list.append((file_path, stat.st_birthtime))
+    video_date_list = sorted(video_date_list, key=lambda e: e[1])
+    return [video for (video, date) in video_date_list]
+
+
+def vidlight_multiple():
+    setup_and_clean()
+    video_list = get_video_list_chronological()
+    num_clips = 0
+    for i, video in enumerate(video_list):
+        call(['rm', 'tmp_audio.mp3'])  # hacky, but need to clear this to prevent ffmpeg from asking to overwrite each time
+        clap_times = clap_detect(video, 'tmp_audio.mp3', CONFIG['output_audio_file'])
+        formatted_clap_times = interpret_claps(clap_times, CONFIG['clip_mode'])
+        split_from_highlights(
+            video_file=video,
+            highlight_times=formatted_clap_times,
+            base_count=num_clips
+        )
+        num_clips += len(formatted_clap_times)
+    generate_concat_file(num_clips)
+    concat_files()
+
+
+if DEMO == 'bee':
     vidlight_bee()
-else:
+elif DEMO == 'single':
     progression_slice()
+elif DEMO == 'multiple':
+    vidlight_multiple()
+
