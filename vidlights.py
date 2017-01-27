@@ -3,7 +3,6 @@ import csv
 import os
 import re
 from enum import Enum
-from subprocess import PIPE
 from subprocess import call
 
 from clap_detect import clap_detect
@@ -14,17 +13,18 @@ class ClipMode(Enum):
     start_and_end = 2
 
 
-DEMO = 'multiple'
+DEMO = 'single'
 CONFIG = {
     'video_mode': 'multiple',
     'video_dir': 'data/vids',
     'extension_filter': 'MOV',
-    'input_video': 'data/snap-test-5.MOV',
-    'output_audio_file': 'tmp/snap-test-5.wav',
-    'output_video': 'generated/coin-all.avi',
+    'input_video': 'data/rainbow.MOV',
+    'output_audio_file': 'tmp/rainbow.wav',
+    'output_video': 'generated/rainbow.avi',
     'clip_mode': ClipMode.start_and_end,
     'clip_duration': 12
 }
+
 
 def get_highlights_from_transcript(keyword, transscript_file):
     """Return list of time pairs corresponding to occurences of the keyword."""
@@ -50,14 +50,22 @@ def get_highlights_from_transcript(keyword, transscript_file):
     return highlight_times
 
 
-def generate_concat_file(n, file_extension='avi', output_dir='output'):
-    """Generate file containing list of files to concatenate for use by ffmpeg. """
+def generate_concat_file(n,
+                         file_extension='avi',
+                         output_dir='output'):
+    """Generate concat file for ffmpeg.
+
+    Consists of a list of filenames to be concatenated """
     with open('concat_files.txt', 'w') as f:
         for i in range(n):
-            f.write("file '{}/tmp{}.{}'\n".format(output_dir, i, file_extension))
+            file_path = "file '{}/tmp{}.{}'\n".format(output_dir, i, file_extension)
+            f.write(file_path)
 
 
-def split_from_highlights(video_file, highlight_times, output_file='output', base_count=0):
+def split_from_highlights(video_file,
+                          highlight_times,
+                          output_file='output',
+                          base_count=0):
     # TODO: ensure output folder exists
     for i, time_pair in enumerate(highlight_times):
         start_time, end_time = time_pair
@@ -79,7 +87,6 @@ def setup_and_clean():
     call(['mkdir', '-p', 'data/vids'])
     call(['rm', 'output.avi'])
     call(['rm', 'tmp_audio.mp3'])
-
 
 
 def vidlight_bee():
@@ -176,4 +183,3 @@ elif DEMO == 'single':
     progression_slice()
 elif DEMO == 'multiple':
     vidlight_multiple()
-
